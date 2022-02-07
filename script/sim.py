@@ -65,7 +65,15 @@ class RosProc:
 
     def scan_callback(self, scan_msg):
         self.scan_data['ranges'] = scan_msg.ranges
-        speed, steering_angle = self.planner.driving(self.scan_data, self.odom_data)
+
+        observation = {
+            'poses_x': self.odom_data['pose_x'],
+            'poses_y': self.odom_data['pose_y'],
+            'poses_theta': self.odom_data['pose_theta'],
+            'linear_vels_x': self.odom_data['linear_vels_x'],
+            'scans': self.scan_data['ranges']
+        }
+        speed, steering_angle = self.planner.driving(observation)
 
         self.ackermann.drive.speed = speed
         self.ackermann.drive.steering_angle = steering_angle
