@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import rospy
 import yaml
 import numpy as np 
@@ -15,14 +17,14 @@ class RosProc:
     def __init__(self):
         self.robot_scale = rospy.get_param('robot_scale', 0.3302)
         self.planner_name = rospy.get_param('planner', 'FGM_PP_V1')
-        self.params_path = rospy.get_param('param_path', 'sim_params.yaml')
+        self.params_path = rospy.get_param('param_path', '/home/gn2016013184/f1tenth_ws/src/FGM_PP/sim_params.yaml')
 
         with open(self.params_path) as file:
             conf_dict = yaml.load(file, Loader=yaml.FullLoader)
         self.conf = Namespace(**conf_dict)
 
         for pln in [FGM_PP_V1, FGM_PP_V2, FGM_PP_V3]:
-            if pln.__name__ == self.planner:
+            if pln.__name__ == self.planner_name:
                 self.planner = pln(self.conf, self.robot_scale)
 
         self.pub = rospy.Publisher('/drive', AckermannDriveStamped, queue_size=1)
@@ -63,7 +65,7 @@ class RosProc:
 
     def scan_callback(self, scan_msg):
         self.scan_data['ranges'] = scan_msg.ranges
-        speed, steering_angle = self.planner.plan(self.scan_data, self.odom_data)
+        speed, steering_angle = self.planner.driving(self.scan_data, self.odom_data)
 
         self.ackermann.drive.speed = speed
         self.ackermann.drive.steering_angle = steering_angle

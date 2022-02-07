@@ -4,7 +4,7 @@ max_speed: 8.0
 min_speed: 4.0
 
 # raceline path and indices
-wpt_path: '/home/lab/f1tenth_ws/src/Sample-Code/maps/SOCHI.csv'
+wpt_path: '/home/gn2016013184/f1tenth_ws/src/FGM_PP/maps/SOCHI.csv'
 wpt_delim: ';'
 wpt_rowskip: 3
 wpt_xind: 1
