@@ -1,6 +1,7 @@
 import numpy as np
 
-class FgPlanner:
+class FGM_CV:
+
     BUBBLE_RADIUS = 160
     PREPROCESS_CONV_SIZE = 100  # PREPROCESS_consecutive_SIZE
     BEST_POINT_CONV_SIZE = 80
@@ -12,6 +13,7 @@ class FgPlanner:
         self.radians_per_elem = None
         self.STRAIGHTS_SPEED = params.max_speed
         self.CORNERS_SPEED = params.min_speed
+        
 
     def preprocess_lidar(self, ranges):
 
@@ -47,7 +49,7 @@ class FgPlanner:
 
         return steering_angle
 
-    def plan(self, obs):
+    def driving(self, obs):
         ranges = obs['scans']
         proc_ranges = self.preprocess_lidar(ranges)
         closest = proc_ranges.argmin()

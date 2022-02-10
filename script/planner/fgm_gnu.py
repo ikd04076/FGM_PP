@@ -2,7 +2,7 @@
 
 import math
 import numpy as np
-
+from visualization_msgs.msg import Marker, MarkerArray
 
 class FGMPlanner:
     def __init__(self, conf, robot_scale=0.3302):
@@ -48,6 +48,67 @@ class FGMPlanner:
 
         return np.sqrt(dx ** 2 + dy ** 2)
 
+    def find_desired_wp(self):
+        wp_index_temp = self.wp_index_current
+        self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
+
+        _vel = self.current_speed
+
+        #self.LOOK = 1.5 + (0.3 * _vel)
+        self.LOOK = 0.5 + (0.5 * _vel)
+
+        while True:
+            wp_index_temp+=1
+
+            if wp_index_temp >= self.wp_num-1:
+                wp_index_temp = 0
+                # print(self.lap_time)
+
+            temp_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
+
+            if temp_distance < self.nearest_distance:
+                self.nearest_distance = temp_distance
+                self.wp_index_current = wp_index_temp
+            elif ((temp_distance > (self.nearest_distance + self.LOOK*1.2)) or (wp_index_temp == self.wp_index_current)):
+                break
+        
+        temp_distance = 0
+        idx_temp = self.wp_index_current
+        while True:
+            if idx_temp >= self.wp_num-1:
+                idx_temp = 0
+            temp_distance = self.getDistance(self.waypoints[idx_temp], self.current_position)
+            if temp_distance > self.LOOK: break
+            idx_temp += 1
+
+        transformed_nearest_point = self.transformPoint(self.current_position, self.waypoints[idx_temp])
+        self.desired_wp_rt = self.xyt2rt(transformed_nearest_point)
+
+        self.idx_temp = idx_temp
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "mpc"
+        marker.id = 2
+        marker.type = marker.CUBE
+        marker.action = marker.ADD
+        marker.pose.position.x = self.waypoints[self.idx_temp][0]
+        marker.pose.position.y = self.waypoints[self.idx_temp][1]
+        marker.pose.position.z = 0.1
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        # print(self.waypoints[self.idx_temp], self.idx_temp)
+        self.marker_pub.publish(marker)
+    
     def xyt2rt(self, origin):
         rtpoint = []
 
@@ -84,36 +145,7 @@ class FGMPlanner:
 
         return temp_waypoint
 
-    def find_desired_wp(self):
-        wp_index_temp = self.wp_index_current
-        self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 
-        while True:
-            wp_index_temp += 1
-
-            if wp_index_temp >= self.wp_num - 1:
-                wp_index_temp = 0
-            temp_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
-
-            if temp_distance < self.nearest_distance:
-                self.nearest_distance = temp_distance
-                self.wp_index_current = wp_index_temp
-            elif ((temp_distance > (self.nearest_distance + self.rf_distance * 1.2)) or (
-                    wp_index_temp == self.wp_index_current)):
-                break
-
-        temp_distance = 0
-        idx_temp = self.wp_index_current
-        while True:
-            if idx_temp >= self.wp_num - 1:
-                idx_temp = 0
-            temp_distance = self.getDistance(self.waypoints[idx_temp], self.current_position)
-            if temp_distance > self.rf_distance:
-                break
-            idx_temp += 1
-
-        transformed_nearest_point = self.transformPoint(self.current_position, self.waypoints[idx_temp])
-        self.desired_wp_rt = self.xyt2rt(transformed_nearest_point)
 
     def GAP(self):
         if self.gap_cont <= 1:

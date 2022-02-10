@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import rospy
 import yaml
@@ -12,24 +12,34 @@ from nav_msgs.msg import Odometry
 from planner.fgm_pp_v1 import FGM_PP_V1
 from planner.fgm_pp_v2 import FGM_PP_V2
 from planner.fgm_pp_v3 import FGM_PP_V3
+from planner.fgm_convolution import FGM_CV
 
 class RosProc:
     def __init__(self):
         self.robot_scale = rospy.get_param('robot_scale', 0.3302)
-        self.planner_name = rospy.get_param('planner', 'FGM_PP_V1')
-        self.params_path = rospy.get_param('param_path', '/home/gn2016013184/f1tenth_ws/src/FGM_PP/sim_params.yaml')
+        self.planner_name = rospy.get_param('planner', 'FGM_CV')
+        self.params_path = rospy.get_param('param_path', '/home/lab/f1tenth_ws/src/FGM_PP/sim_params.yaml')
 
+        #import topic
+        self.drive_topic = rospy.get_param("drive_topic", "/drive") 
+        self.odom_topic = rospy.get_param("odom_topic", "/odom")
+        self.scan_topic = rospy.get_param("scan_topic", "/scan")
+        
         with open(self.params_path) as file:
             conf_dict = yaml.load(file, Loader=yaml.FullLoader)
         self.conf = Namespace(**conf_dict)
 
-        for pln in [FGM_PP_V1, FGM_PP_V2, FGM_PP_V3]:
+        for pln in [FGM_PP_V1, FGM_PP_V2, FGM_PP_V3, FGM_CV]:
             if pln.__name__ == self.planner_name:
                 self.planner = pln(self.conf, self.robot_scale)
 
-        self.pub = rospy.Publisher('/drive', AckermannDriveStamped, queue_size=1)
-        self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=1)
+
+        self.scan_sub = rospy.Subscriber(self.scan_topic, LaserScan, self.scan_callback, queue_size = 10)
+        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_callback, queue_size = 10)
+
+        # self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        # self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
 
         self.ackermann = AckermannDriveStamped()
         self.ackermann.drive.speed = 0.0
@@ -77,12 +87,12 @@ class RosProc:
 
         self.ackermann.drive.speed = speed
         self.ackermann.drive.steering_angle = steering_angle
-        self.pub.publish(self.ackermann)
+        self.drive_pub.publish(self.ackermann)
 
 
 if __name__ == "__main__":
     rospy.init_node('fgm_pp_v')
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(10)
     app = RosProc()
     while not rospy.is_shutdown():
         rate.sleep()

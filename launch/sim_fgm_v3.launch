@@ -1,0 +1,11 @@
+<launch>
+
+    <include file="$(find f1tenth_gym_ros)/launch/gym_bridge_host.launch" />
+    
+    <node name="fgm_pp_v1" pkg="fgm_pp_gnu" type="sim.py" output="screen">
+        <param name="robot_scale" value="0.3302" />
+        <param name="planner" value="FGM_PP_V3" />
+        <param name="param_path" value="$(find fgm_pp_gnu)/sim_params.yaml" />
+    </node>
+
+</launch>
